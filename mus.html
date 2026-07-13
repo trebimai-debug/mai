@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Simulador de Mus</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2b5329; /* Verde tapete de cartas */
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .contenedor {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .marcador {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #ffd700; /* Dorado */
+        }
+        .controles {
+            margin: 20px 0;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        input[type="number"] {
+            font-size: 18px;
+            padding: 5px;
+            width: 80px;
+            border-radius: 5px;
+            border: none;
+            text-align: center;
+        }
+        button {
+            font-size: 18px;
+            padding: 8px 15px;
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #b71c1c;
+        }
+        .cartas-zona {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .carta {
+            background-color: white;
+            color: black;
+            width: 80px;
+            height: 120px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            border: 2px solid #ccc;
+        }
+        .oro { color: #b8860b; }
+        .copa { color: #d32f2f; }
+        .espada { color: #1976d2; }
+        .basto { color: #388e3c; }
+        
+        #resultado {
+            font-size: 20px;
+            margin-top: 20px;
+            min-height: 60px;
+        }
+        .volver {
+            display: inline-block;
+            margin-top: 30px;
+            color: #fff;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor">
+        <h1>♠️ Mini-Mus 🪙</h1>
+        
+        <div class="marcador">Puntos: <span id="puntos">100</span></div>
+        
+        <div class="controles">
+            <label for="apuesta">Tu apuesta: </label>
+            <input type="number" id="apuesta" value="10" min="1">
+            <button onclick="jugarMano()">Repartir y Apostar</button>
+        </div>
+
+        <div class="cartas-zona" id="mis-cartas">
+            <!-- Las cartas aparecerán aquí -->
+            <div style="width: 100%; color: #aaa;">Haz tu apuesta para recibir cartas</div>
+        </div>
+
+        <div id="resultado"></div>
+        
+        <!-- Enlace para volver a tu página principal -->
+        <a href="index.html" class="volver">Volver a la página principal</a>
+    </div>
+
+    <script>
+        let misPuntos = 100;
+        const palos = [
+            { nombre: 'Oros', clase: 'oro', icono: '🪙' },
+            { nombre: 'Copas', clase: 'copa', icono: '🍷' },
+            { nombre: 'Espadas', clase: 'espada', icono: '⚔️' },
+            { nombre: 'Bastos', clase: 'basto', icono: '🪵' }
+        ];
+        const valores = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
+        const nombresCartas = {1:'As', 2:'Dos', 3:'Tres', 4:'4', 5:'5', 6:'6', 7:'7', 10:'Sota', 11:'Caballo', 12:'Rey'};
+
+        // Crea una baraja española de 40 cartas
+        function crearBaraja() {
+            let baraja = [];
+            for (let palo of palos) {
+                for (let valor of valores) {
+                    baraja.push({ valor: valor, palo: palo });
+                }
+            }
+            return baraja;
+        }
+
+        // Selecciona 4 cartas al azar
+        function repartir() {
+            let baraja = crearBaraja();
+            let mano = [];
+            for (let i = 0; i < 4; i++) {
+                let indice = Math.floor(Math.random() * baraja.length);
+                mano.push(baraja[indice]);
+                baraja.splice(indice, 1); // Quitar carta de la baraja para no repetirla
+            }
+            return mano;
+        }
+
+        // Calcula la fuerza de la mano (Reglas simplificadas del Mus)
+        function evaluarMano(mano) {
+            let puntuacion = 0;
+            let valoresReales = [];
+            let sumaJuego = 0;
+
+            // Transformar valores a reglas de mus (3 = Rey/12, 2 = As/1)
+            mano.forEach(carta => {
+                let v = carta.valor;
+                if (v === 3) v = 12; // Treses son Reyes
+                if (v === 2) v = 1;  // Doses son Ases
+                valoresReales.push(v);
+                
+                // Suma para el juego (figuras = 10, resto = su valor)
+                sumaJuego += (v >= 10) ? 10 : v;
+            });
+
+            // Ordenar para buscar pares fácilmente
+            valoresReales.sort((a, b) => b - a);
+
+            // Evaluar Juego (31 es lo máximo)
+            if (sumaJuego === 31) puntuacion += 100;
+            else if (sumaJuego === 32) puntuacion += 90;
+            else if (sumaJuego >= 40) puntuacion += 80;
+            else puntuacion += sumaJuego; // Si no hay juego, suma al punto
+
+            // Evaluar Pares y Grande
+            let cuentaValores = {};
+            valoresReales.forEach(v => {
+                cuentaValores[v] = (cuentaValores[v] || 0) + 1;
+                if (v === 12) puntuacion += 15; // Puntos extra por cada Rey/Tres
+            });
+
+            let tienePares = false;
+            for (let v in cuentaValores) {
+                if (cuentaValores[v] === 4) { puntuacion += 150; tienePares = "Duples (4 iguales)"; } // 4 iguales
+                else if (cuentaValores[v] === 3) { puntuacion += 120; tienePares = "Medias"; }
+                else if (cuentaValores[v] === 2) { puntuacion += 50; tienePares = "Par"; }
+            }
+
+            // Detectar Duples de dos parejas distintas
+            let numParejas = Object.values(cuentaValores).filter(cant => cant === 2).length;
+            if (numParejas === 2) { puntuacion += 140; tienePares = "Duples (Dobles parejas)"; }
+
+            return { 
+                puntuacionTotal: puntuacion, 
+                sumaJuego: sumaJuego, 
+                pares: tienePares 
+            };
+        }
+
+        function dibujarCartas(mano) {
+            const zona = document.getElementById('mis-cartas');
+            zona.innerHTML = '';
+            mano.forEach(carta => {
+                let div = document.createElement('div');
+                div.className = `carta ${carta.palo.clase}`;
+                div.innerHTML = `<span>${nombresCartas[carta.valor]}</span><span style="font-size:24px;">${carta.palo.icono}</span>`;
+                zona.appendChild(div);
+            });
+        }
+
+        function jugarMano() {
+            let apuestaInput = document.getElementById('apuesta');
+            let apuesta = parseInt(apuestaInput.value);
+
+            // Validaciones
+            if (isNaN(apuesta) || apuesta <= 0) {
+                alert("Debes apostar al menos 1 punto.");
+                return;
+            }
+            if (apuesta > misPuntos) {
+                alert("No tienes suficientes puntos para esa apuesta.");
+                return;
+            }
+
+            // Restar apuesta inicial
+            misPuntos -= apuesta;
+            
+            // Repartir y evaluar
+            let miMano = repartir();
+            dibujarCartas(miMano);
+            let miEvaluacion = evaluarMano(miMano);
+
+            // Generar una puntuación rival aleatoria (simulando un oponente medio)
+            // Una mano normal suele rondar entre 40 y 160 puntos de "fuerza"
+            let fuerzaRival = Math.floor(Math.random() * 120) + 40; 
+
+            let divResultado = document.getElementById('resultado');
+            let mensaje = `Tienes <strong>${miEvaluacion.sumaJuego}</strong> a juego. `;
+            if (miEvaluacion.pares) mensaje += `Tienes <strong>${miEvaluacion.pares}</strong>. `;
+
+            if (miEvaluacion.puntuacionTotal > fuerzaRival) {
+                let ganancia = apuesta * 2;
+                misPuntos += ganancia;
+                divResultado.innerHTML = mensaje + `<br><span style="color:#4caf50;">¡Tu mano es más fuerte! Has ganado ${ganancia} puntos.</span>`;
+            } else {
+                divResultado.innerHTML = mensaje + `<br><span style="color:#f44336;">El rival tenía mejor mano. Pierdes ${apuesta} puntos.</span>`;
+            }
+
+            document.getElementById('puntos').innerText = misPuntos;
+
+            if (misPuntos <= 0) {
+                divResultado.innerHTML += "<br><br><strong>¡Te has quedado sin puntos! Recarga la página para volver a empezar.</strong>";
+                document.querySelector('button').disabled = true;
+            }
+        }
+    </script>
+</body>
+</html>
